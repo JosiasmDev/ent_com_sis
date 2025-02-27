@@ -1,0 +1,12 @@
+{% extends 'gestion/base.html' %}
+{% block contenido %}
+<h1>Mis Proyectos</h1>
+<ul>
+    {% for proyecto in proyectos %}
+        <li><a href="{% url 'vista_proyecto' proyecto.id %}">{{ proyecto.titulo }}</a></li>
+    {% empty %}
+        <li>No tienes proyectos asignados aún.</li>
+    {% endfor %}
+</ul>
+<a href="{% url 'crear_proyecto' %}" class="btn btn-primary">Crear Proyecto</a>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'gestion/base.html' %}
+{% block contenido %}
+<h1>{{ proyecto.titulo }}</h1>
+<p>{{ proyecto.descripcion }}</p>
+
+<form method="get" class="mb-3">
+    <label>Estado:</label>
+    <select name="estado" class="form-control d-inline w-auto">
+        <option value="">Todos</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="en_progreso">En Progreso</option>
+        <option value="completada">Completada</option>
+    </select>
+    <label>Usuario:</label>
+    <select name="usuario" class="form-control d-inline w-auto">
+        <option value="">Todos</option>
+        {% for usuario in usuarios %}
+            <option value="{{ usuario.id }}">{{ usuario.username }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+</form>
+
+<h2>Tareas</h2>
+<ul>
+    {% for tarea in tareas %}
+        <li>{{ tarea.titulo }} - {{ tarea.estado }} (<a href="{% url 'agregar_comentario' tarea.id %}">Comentar</a>)</li>
+    {% endfor %}
+</ul>
+<a href="{% url 'crear_tarea' proyecto.id %}" class="btn btn-primary">Crear Tarea</a>
+<a href="{% url 'enviar_mensaje' proyecto.id %}" class="btn btn-secondary">Enviar Mensaje</a>
+{% endblock %}
