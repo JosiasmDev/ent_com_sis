@@ -3,10 +3,14 @@
 <h1>Mis Proyectos</h1>
 <ul>
     {% for proyecto in proyectos %}
-        <li><a href="{% url 'vista_proyecto' proyecto.id %}">{{ proyecto.titulo }}</a></li>
+        <li>
+            <a href="{% url 'vista_proyecto' proyecto.id %}">{{ proyecto.titulo }}</a>
+            <a href="{% url 'editar_proyecto' proyecto.id %}" class="btn btn-sm btn-secondary">Editar</a>
+        </li>
     {% empty %}
         <li>No tienes proyectos asignados aún.</li>
     {% endfor %}
 </ul>
 <a href="{% url 'crear_proyecto' %}" class="btn btn-primary">Crear Proyecto</a>
+<a href="{% url 'logout' %}" class="btn btn-danger">Cerrar Sesión</a>
 {% endblock %}
