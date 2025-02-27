@@ -1,16 +1,26 @@
 {% extends 'gestion/base.html' %}
 {% block contenido %}
-<h1>Mis Proyectos</h1>
-<ul>
+<h1 class="text-center">Lista de Proyectos</h1>
+<ul class="list-group">
     {% for proyecto in proyectos %}
-        <li>
-            <a href="{% url 'vista_proyecto' proyecto.id %}">{{ proyecto.titulo }}</a>
-            <a href="{% url 'editar_proyecto' proyecto.id %}" class="btn btn-sm btn-secondary">Editar</a>
+        <li class="list-group-item bg-secondary text-light">
+            {% if user in proyecto.usuarios.all or user == proyecto.creador %}
+                <a href="{% url 'vista_proyecto' proyecto.id %}" class="text-light">{{ proyecto.titulo }}</a>
+                <a href="{% url 'editar_proyecto' proyecto.id %}" class="btn btn-sm btn-outline-light ms-2">Editar</a>
+            {% else %}
+                {{ proyecto.titulo }} (No asignado)
+            {% endif %}
+            <p class="mt-2 mb-0"><strong>Usuarios asignados:</strong> 
+                {% for usuario in proyecto.usuarios.all %}
+                    {{ usuario.username }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Ninguno
+                {% endfor %}
+            </p>
         </li>
     {% empty %}
-        <li>No tienes proyectos asignados aún.</li>
+        <li class="list-group-item bg-secondary text-light">No hay proyectos disponibles.</li>
     {% endfor %}
 </ul>
-<a href="{% url 'crear_proyecto' %}" class="btn btn-primary">Crear Proyecto</a>
-<a href="{% url 'logout' %}" class="btn btn-danger">Cerrar Sesión</a>
+<a href="{% url 'crear_proyecto' %}" class="btn btn-primary mt-3">Crear Proyecto</a>
 {% endblock %}

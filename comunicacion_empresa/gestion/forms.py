@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import Proyecto, Tarea, Mensaje, Comentario
 
+# gestion/forms.py
 class ProyectoForm(forms.ModelForm):
     class Meta:
         model = Proyecto
@@ -11,6 +12,7 @@ class ProyectoForm(forms.ModelForm):
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'type': 'date'}),
+            'usuarios': forms.CheckboxSelectMultiple(),
         }
 
 class TareaForm(forms.ModelForm):

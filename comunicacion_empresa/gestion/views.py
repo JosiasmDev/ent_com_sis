@@ -1,15 +1,21 @@
 # gestion/views.py
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import logout
+from django.contrib.auth.forms import UserCreationForm
 from .models import Proyecto, Tarea, Mensaje, Comentario, Rol
-from .forms import ProyectoForm, TareaForm, MensajeForm, ComentarioForm
+from .forms import ProyectoForm, TareaForm, MensajeForm, ComentarioForm, RegistroForm
 
 def inicio(request):
     if request.user.is_authenticated:
         return redirect('lista_proyectos')
-    return render(request, 'gestion/inicio.html')
+    return redirect('login')
 
-# gestion/views.py (extracto)
+@login_required
+def lista_proyectos(request):
+    proyectos = Proyecto.objects.all()  # Muestra todos los proyectos
+    return render(request, 'gestion/lista_proyectos.html', {'proyectos': proyectos})
+
 @login_required
 def crear_proyecto(request):
     if request.method == 'POST':
@@ -18,9 +24,8 @@ def crear_proyecto(request):
             proyecto = form.save(commit=False)
             proyecto.creador = request.user
             proyecto.save()
-            proyecto.usuarios.add(request.user)  # Asegura que el creador esté asignado
+            proyecto.usuarios.add(request.user)
             form.save_m2m()
-            # Asigna rol de administrador al creador
             Rol.objects.create(usuario=request.user, proyecto=proyecto, rol='administrador')
             print("Proyecto guardado:", proyecto.titulo)
             return redirect('lista_proyectos')
@@ -29,7 +34,7 @@ def crear_proyecto(request):
     else:
         form = ProyectoForm()
     return render(request, 'gestion/crear_proyecto.html', {'form': form})
-# gestion/views.py (añadir después de crear_proyecto)
+
 @login_required
 def editar_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
@@ -42,33 +47,26 @@ def editar_proyecto(request, proyecto_id):
         form = ProyectoForm(instance=proyecto)
     return render(request, 'gestion/editar_proyecto.html', {'form': form, 'proyecto': proyecto})
 
-
-@login_required
-def lista_proyectos(request):
-    proyectos = Proyecto.objects.filter(usuarios=request.user)
-    return render(request, 'gestion/lista_proyectos.html', {'proyectos': proyectos})
-
 @login_required
 def vista_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-    # Verifica si el usuario está en proyecto.usuarios o es administrador
     rol = Rol.objects.filter(usuario=request.user, proyecto=proyecto).first()
     if request.user not in proyecto.usuarios.all() and (not rol or rol.rol != 'administrador'):
         return render(request, 'gestion/sin_permiso.html')
     
     tareas = proyecto.tareas.all()
+    mensajes = proyecto.mensajes.all()
     estado = request.GET.get('estado', '')
     usuario_id = request.GET.get('usuario', '')
-    
     if estado:
         tareas = tareas.filter(estado=estado)
     if usuario_id:
         tareas = tareas.filter(asignados__id=usuario_id)
-    
     tareas = tareas.order_by('fecha_limite')
     return render(request, 'gestion/proyecto.html', {
         'proyecto': proyecto,
         'tareas': tareas,
+        'mensajes': mensajes,
         'usuarios': proyecto.usuarios.all()
     })
 
@@ -105,7 +103,7 @@ def enviar_mensaje(request, proyecto_id):
 
 @login_required
 def agregar_comentario(request, tarea_id):
-    tarea = get_object_or_404( Tarea, id=tarea_id)
+    tarea = get_object_or_404(Tarea, id=tarea_id)
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
         if form.is_valid():
@@ -118,15 +116,11 @@ def agregar_comentario(request, tarea_id):
         form = ComentarioForm()
     return render(request, 'gestion/agregar_comentario.html', {'form': form, 'tarea': tarea})
 
-# gestion/views.py (extracto, añadir al final)
-from django.contrib.auth.forms import UserCreationForm
-from .forms import RegistroForm
-
 def registro(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            form.save()  # Guarda el usuario en la base de datos
+            form.save()
             return redirect('login')
     else:
         form = RegistroForm()
