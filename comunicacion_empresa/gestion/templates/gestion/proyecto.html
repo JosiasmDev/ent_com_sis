@@ -14,34 +14,45 @@
 
         <h2>Tareas</h2>
         <div class="row">
-            {% for tarea in tareas %}
-                <div class="col-md-4">
-                    <div class="card mb-3 bg-secondary text-light">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ tarea.titulo }}</h5>
-                            <p class="card-text">{{ tarea.estado }}</p>
-                            <a href="{% url 'agregar_comentario' tarea.id %}" class="btn btn-sm btn-primary">Comentar</a>
-                            <ul class="list-unstyled mt-2">
-                                {% for comentario in tarea.comentarios.all %}
-                                    <li>{{ comentario.autor.username }}: {{ comentario.contenido }} ({{ comentario.fecha }})</li>
-                                {% endfor %}
-                            </ul>
+            <div class="col-md-8">
+                <div class="row">
+                    {% for tarea in tareas %}
+                        <div class="col-md-6">
+                            <div class="card mb-3 bg-secondary text-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ tarea.titulo }}</h5>
+                                    <p class="card-text">{{ tarea.estado }}</p>
+                                    <a href="{% url 'agregar_comentario' tarea.id %}" class="btn btn-sm btn-primary">Comentar</a>
+                                    <ul class="list-unstyled mt-2">
+                                        {% for comentario in tarea.comentarios.all %}
+                                            <li>{{ comentario.autor.username }}: {{ comentario.contenido }} ({{ comentario.fecha }})</li>
+                                        {% empty %}
+                                            <li>No hay comentarios.</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+            </div>
         </div>
         <a href="{% url 'crear_tarea' proyecto.id %}" class="btn btn-primary mt-3 w-100">Crear Tarea</a>
 
         <h2>Mensajes</h2>
-        <ul class="list-group">
+        <ul class="list-group mb-3">
             {% for mensaje in mensajes %}
-                <li class="list-group-item bg-secondary text-light">{{ mensaje.remitente.username }}: {{ mensaje.contenido }} ({{ mensaje.fecha_envio }})</li>
+                <li class="list-group-item bg-secondary text-light">
+                    {{ mensaje.remitente.username }}: {{ mensaje.contenido }} ({{ mensaje.fecha_envio }})
+                    {% if mensaje.remitente == user %}
+                        <a href="{% url 'eliminar_mensaje_proyecto' mensaje.id %}" class="btn btn-sm btn-danger float-end">Eliminar</a>
+                    {% endif %}
+                </li>
             {% empty %}
                 <li class="list-group-item bg-secondary text-light">No hay mensajes.</li>
             {% endfor %}
         </ul>
-        <a href="{% url 'enviar_mensaje' proyecto.id %}" class="btn btn-secondary mt-3 w-100">Enviar Mensaje</a>
+        <a href="{% url 'enviar_mensaje_proyecto' proyecto.id %}" class="btn btn-secondary mt-3 w-100">Enviar Mensaje</a>
     </div>
 </div>
 {% endblock %}

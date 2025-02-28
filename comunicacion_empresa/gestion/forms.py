@@ -26,7 +26,11 @@ class TareaForm(forms.ModelForm):
 class MensajeForm(forms.ModelForm):
     class Meta:
         model = Mensaje
-        fields = ['contenido', 'destinatarios']
+        fields = ['destinatario', 'contenido']
+        widgets = {
+            'destinatario': forms.Select(attrs={'class': 'form-control'}),
+            'contenido': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
 
 class ComentarioForm(forms.ModelForm):
     class Meta:

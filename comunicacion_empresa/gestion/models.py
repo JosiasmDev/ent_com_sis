@@ -29,14 +29,14 @@ class Tarea(models.Model):
         return self.titulo
 
 class Mensaje(models.Model):
-    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='mensajes')
-    remitente = models.ForeignKey(User, on_delete=models.CASCADE)
+    remitente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_enviados')
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_recibidos')
     contenido = models.TextField()
     fecha_envio = models.DateTimeField(auto_now_add=True)
-    destinatarios = models.ManyToManyField(User, related_name='mensajes_recibidos')
+    leido = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Mensaje de {self.remitente} en {self.proyecto}"
+        return f"Mensaje de {self.remitente} a {self.destinatario} ({self.fecha_envio})"
 
 class Comentario(models.Model):
     tarea = models.ForeignKey(Tarea, on_delete=models.CASCADE, related_name='comentarios')
@@ -67,3 +67,12 @@ class Rol(models.Model):
 
     def __str__(self):
         return f"{self.usuario} - {self.rol} en {self.proyecto}"
+    
+class MensajeProyecto(models.Model):
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='mensajes')
+    remitente = models.ForeignKey(User, on_delete=models.CASCADE)
+    contenido = models.TextField()
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Mensaje de {self.remitente} en {self.proyecto} ({self.fecha_envio})"
