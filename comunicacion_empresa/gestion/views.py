@@ -38,8 +38,18 @@ def crear_proyecto(request):
             proyecto = form.save(commit=False)
             proyecto.creador = request.user
             proyecto.save()
-            proyecto.usuarios.add(request.user)
-            form.save_m2m()
+            proyecto.usuarios.add(request.user)  # El creador siempre está asignado
+            form.save_m2m()  # Guardar los usuarios asignados desde el formulario
+            # Notificar a todos los usuarios asignados (excepto el creador)
+            for usuario in proyecto.usuarios.all():
+                if usuario != request.user:
+                    notify.send(
+                        request.user,
+                        recipient=usuario,
+                        verb='te asignó al proyecto',
+                        target=proyecto,
+                        description=f'Proyecto: {proyecto.titulo}'
+                    )
             Rol.objects.create(usuario=request.user, proyecto=proyecto, rol='administrador')
             return redirect('lista_proyectos')
     else:
@@ -81,10 +91,24 @@ def vista_proyecto(request, proyecto_id):
             usuario = User.objects.get(id=usuario_id)
             proyecto.usuarios.remove(usuario)
             Rol.objects.filter(usuario=usuario, proyecto=proyecto).delete()
+            notify.send(
+                request.user,
+                recipient=usuario,
+                verb='te quitó del proyecto',
+                target=proyecto,
+                description=f'Proyecto: {proyecto.titulo}'
+            )
         elif accion == 'cambiar_rol' and usuario_id:
             rol = request.POST.get('rol')
             usuario = User.objects.get(id=usuario_id)
             Rol.objects.update_or_create(usuario=usuario, proyecto=proyecto, defaults={'rol': rol})
+            notify.send(
+                request.user,
+                recipient=usuario,
+                verb='cambió tu rol en el proyecto',
+                target=proyecto,
+                description=f'Proyecto: {proyecto.titulo}, nuevo rol: {rol}'
+            )
 
     usuarios_con_roles = []
     for usuario in proyecto.usuarios.all():
@@ -149,9 +173,8 @@ def editar_tarea(request, tarea_id):
     if request.method == 'POST':
         form = TareaForm(request.POST, instance=tarea)
         if form.is_valid():
-            tarea_antigua = Tarea.objects.get(id=tarea_id)
             form.save()
-            # Notificar a todos los asignados sobre la modificación
+            # Notificar a todos los asignados sobre cualquier modificación
             for usuario in tarea.asignados.all():
                 notify.send(
                     request.user,
@@ -332,6 +355,13 @@ def gestionar_grupo(request, grupo_id):
                 usuario = User.objects.get(id=usuario_id)
                 grupo.miembros.remove(usuario)
                 Rol.objects.filter(usuario=usuario, proyecto=grupo.proyecto).delete()
+                notify.send(
+                    request.user,
+                    recipient=usuario,
+                    verb='te quitó del grupo',
+                    target=grupo,
+                    description=f'Grupo: {grupo.nombre} en {grupo.proyecto.titulo}'
+                )
         elif accion == 'cambiar_rol':
             usuario_id = request.POST.get('usuario')
             rol = request.POST.get('rol')
@@ -342,14 +372,31 @@ def gestionar_grupo(request, grupo_id):
                     proyecto=grupo.proyecto, 
                     defaults={'rol': rol}
                 )
+                notify.send(
+                    request.user,
+                    recipient=usuario,
+                    verb='cambió tu rol en el grupo',
+                    target=grupo,
+                    description=f'Grupo: {grupo.nombre} en {grupo.proyecto.titulo}, nuevo rol: {rol}'
+                )
         elif accion == 'eliminar':
             grupo.delete()
             return redirect('lista_grupos')
         elif accion == 'editar':
             nombre = request.POST.get('nombre')
-            if nombre:
+            if nombre and nombre != grupo.nombre:
+                grupo_nombre_antiguo = grupo.nombre
                 grupo.nombre = nombre
                 grupo.save()
+                # Notificar a todos los miembros del grupo sobre el cambio de nombre
+                for miembro in grupo.miembros.all():
+                    notify.send(
+                        request.user,
+                        recipient=miembro,
+                        verb='modificó el nombre del grupo',
+                        target=grupo,
+                        description=f'Grupo: {grupo_nombre_antiguo} ahora es {grupo.nombre} en {grupo.proyecto.titulo}'
+                    )
 
     miembros_con_roles = []
     for miembro in grupo.miembros.all():
@@ -380,11 +427,25 @@ def lista_usuarios(request):
             grupo = Grupo.objects.get(id=grupo_id)
             grupo.miembros.add(usuario)
             Rol.objects.create(usuario=usuario, proyecto=grupo.proyecto, rol=rol)
+            notify.send(
+                request.user,
+                recipient=usuario,
+                verb='te asignó al grupo',
+                target=grupo,
+                description=f'Grupo: {grupo.nombre} en {grupo.proyecto.titulo}'
+            )
         elif accion == 'quitar' and usuario_id and grupo_id:
             usuario = User.objects.get(id=usuario_id)
             grupo = Grupo.objects.get(id=grupo_id)
             grupo.miembros.remove(usuario)
             Rol.objects.filter(usuario=usuario, proyecto=grupo.proyecto).delete()
+            notify.send(
+                request.user,
+                recipient=usuario,
+                verb='te quitó del grupo',
+                target=grupo,
+                description=f'Grupo: {grupo.nombre} en {grupo.proyecto.titulo}'
+            )
 
     usuarios_con_grupos = []
     for usuario in usuarios:
