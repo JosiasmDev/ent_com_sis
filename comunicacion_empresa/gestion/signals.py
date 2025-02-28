@@ -16,6 +16,8 @@ def notificar_asignacion_tarea(sender, instance, action, pk_set, **kwargs):
                 target=instance
             )
 
+
+'''
 @receiver(post_save, sender=Mensaje)
 def notificar_mensaje(sender, instance, created, **kwargs):
     if created:
@@ -25,3 +27,4 @@ def notificar_mensaje(sender, instance, created, **kwargs):
             verb='te envió un mensaje',
             target=instance
         )
+'''

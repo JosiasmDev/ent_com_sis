@@ -40,4 +40,5 @@ urlpatterns = [
     # Vistas de notificaciones
     path('notificaciones/', views.lista_notificaciones, name='lista_notificaciones'),
     path('notificaciones/marcar/<int:notificacion_id>/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
+    path('notificaciones/marcar-todas/', views.marcar_todas_notificaciones_leidas, name='marcar_todas_notificaciones_leidas'),
 ]

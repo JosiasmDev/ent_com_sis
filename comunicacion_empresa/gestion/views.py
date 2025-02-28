@@ -151,23 +151,15 @@ def editar_tarea(request, tarea_id):
         if form.is_valid():
             tarea_antigua = Tarea.objects.get(id=tarea_id)
             form.save()
+            # Notificar a todos los asignados sobre la modificación
             for usuario in tarea.asignados.all():
-                if usuario not in tarea_antigua.asignados.all():
-                    notify.send(
-                        request.user,
-                        recipient=usuario,
-                        verb='te asignó la tarea',
-                        target=tarea,
-                        description=f'Tarea: {tarea.titulo} en {tarea.proyecto.titulo}'
-                    )
-                else:
-                    notify.send(
-                        request.user,
-                        recipient=usuario,
-                        verb='modificó la tarea',
-                        target=tarea,
-                        description=f'Tarea: {tarea.titulo} en {tarea.proyecto.titulo}'
-                    )
+                notify.send(
+                    request.user,
+                    recipient=usuario,
+                    verb='modificó la tarea',
+                    target=tarea,
+                    description=f'Tarea: {tarea.titulo} en {tarea.proyecto.titulo}'
+                )
             return redirect('vista_proyecto', proyecto_id=tarea.proyecto.id)
     else:
         form = TareaForm(instance=tarea)
@@ -237,12 +229,13 @@ def enviar_mensaje_privado(request):
             mensaje = form.save(commit=False)
             mensaje.remitente = request.user
             mensaje.save()
+            # Enviar UNA sola notificación con el contenido
             notify.send(
                 request.user,
                 recipient=mensaje.destinatario,
                 verb='te envió un mensaje',
                 target=mensaje,
-                description=mensaje.contenido[:50]
+                description=mensaje.contenido  # Solo el contenido del mensaje
             )
             return redirect(request.META.get('HTTP_REFERER', 'lista_proyectos'))
     else:
@@ -326,6 +319,13 @@ def gestionar_grupo(request, grupo_id):
                     proyecto=grupo.proyecto, 
                     defaults={'rol': rol}
                 )
+                notify.send(
+                    request.user,
+                    recipient=usuario,
+                    verb='te asignó al grupo',
+                    target=grupo,
+                    description=f'Grupo: {grupo.nombre} en {grupo.proyecto.titulo}'
+                )
         elif accion == 'quitar':
             usuario_id = request.POST.get('usuario')
             if usuario_id:
@@ -364,6 +364,7 @@ def gestionar_grupo(request, grupo_id):
         'usuarios': User.objects.all(),
         'miembros_con_roles': miembros_con_roles
     })
+
 
 # Vistas de usuarios
 @login_required
@@ -404,4 +405,22 @@ def lista_notificaciones(request):
 def marcar_notificacion_leida(request, notificacion_id):
     notificacion = get_object_or_404(request.user.notifications, id=notificacion_id)
     notificacion.mark_as_read()
+    # Si la notificación está relacionada con un mensaje, marcarlo como leído
+    if notificacion.target and isinstance(notificacion.target, Mensaje):
+        mensaje = notificacion.target
+        mensaje.leido = True
+        mensaje.save()
+    return redirect('lista_notificaciones')
+
+@login_required
+def marcar_todas_notificaciones_leidas(request):
+    if request.method == 'POST':
+        notificaciones = request.user.notifications.unread()
+        for notificacion in notificaciones:
+            notificacion.mark_as_read()
+            if notificacion.target and isinstance(notificacion.target, Mensaje):
+                mensaje = notificacion.target
+                mensaje.leido = True
+                mensaje.save()
+        return redirect('lista_notificaciones')
     return redirect('lista_notificaciones')
