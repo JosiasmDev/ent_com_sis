@@ -1,0 +1,22 @@
+{% extends 'gestion/base.html' %}
+{% block contenido %}
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h1 class="mb-0 text-uppercase">Notificaciones</h1>
+    </div>
+    <div class="card-body">
+        <ul class="list-group">
+            {% for notificacion in notificaciones %}
+                <li class="list-group-item {% if notificacion.unread %}text-warning{% endif %}">
+                    {{ notificacion.actor }} {{ notificacion.verb }}: {{ notificacion.description }}
+                    {% if notificacion.unread %}
+                        <a href="{% url 'marcar_notificacion_leida' notificacion.id %}" class="btn btn-sm btn-success float-end">Leído</a>
+                    {% endif %}
+                </li>
+            {% empty %}
+                <li class="list-group-item">No hay notificaciones.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
