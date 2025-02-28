@@ -71,7 +71,6 @@ def vista_proyecto(request, proyecto_id):
         if accion == 'agregar' and usuario_id:
             usuario = User.objects.get(id=usuario_id)
             proyecto.usuarios.add(usuario)
-            # Asignar rol por defecto si no existe
             Rol.objects.get_or_create(usuario=usuario, proyecto=proyecto, defaults={'rol': 'miembro'})
         elif accion == 'quitar' and usuario_id:
             usuario = User.objects.get(id=usuario_id)
@@ -82,18 +81,17 @@ def vista_proyecto(request, proyecto_id):
             usuario = User.objects.get(id=usuario_id)
             Rol.objects.update_or_create(usuario=usuario, proyecto=proyecto, defaults={'rol': rol})
 
-    # Preprocesar usuarios con roles
     usuarios_con_roles = []
     for usuario in proyecto.usuarios.all():
-        rol_obj = Rol.objects.get(usuario=usuario, proyecto=proyecto)
-        usuarios_con_roles.append({'usuario': usuario, 'rol': rol_obj.rol})
+        rol_obj = Rol.objects.filter(usuario=usuario, proyecto=proyecto).first()
+        usuarios_con_roles.append({'usuario': usuario, 'rol': rol_obj.rol if rol_obj else 'Sin rol'})
 
     return render(request, 'gestion/proyecto.html', {
         'proyecto': proyecto,
         'tareas': tareas,
         'mensajes': mensajes,
         'usuarios_con_roles': usuarios_con_roles,
-        'todos_los_usuarios': User.objects.all()  # Para agregar nuevos usuarios
+        'todos_los_usuarios': User.objects.all()
     })
 
 @login_required
@@ -237,7 +235,23 @@ def lista_usuarios(request):
             grupo = Grupo.objects.get(id=grupo_id)
             grupo.miembros.add(usuario)
             Rol.objects.create(usuario=usuario, proyecto=grupo.proyecto, rol=rol)
-    return render(request, 'gestion/lista_usuarios.html', {'usuarios': usuarios, 'grupos': Grupo.objects.all()})
+        elif accion == 'quitar' and usuario_id and grupo_id:
+            usuario = User.objects.get(id=usuario_id)
+            grupo = Grupo.objects.get(id=grupo_id)
+            grupo.miembros.remove(usuario)
+            Rol.objects.filter(usuario=usuario, proyecto=grupo.proyecto).delete()
+
+    # Preprocesar usuarios con sus grupos
+    usuarios_con_grupos = []
+    for usuario in usuarios:
+        grupos = usuario.grupos.all()
+        usuarios_con_grupos.append({'usuario': usuario, 'grupos': grupos})
+
+    return render(request, 'gestion/lista_usuarios.html', {
+        'usuarios_con_grupos': usuarios_con_grupos,
+        'grupos': Grupo.objects.all()
+    })
+
 
 def registro(request):
     if request.method == 'POST':

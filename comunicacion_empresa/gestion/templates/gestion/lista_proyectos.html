@@ -1,12 +1,16 @@
 {% extends 'gestion/base.html' %}
 {% block contenido %}
-<h1 class="text-center mb-4">Proyectos</h1>
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h1 class="mb-0 text-uppercase">Proyectos</h1>
+    </div>
+</div>
 <div class="row justify-content-center">
     <div class="col-md-10">
         {% for proyecto in proyectos %}
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">
+                    <h3 class="mb-0 text-uppercase">
                         <a href="{% url 'vista_proyecto' proyecto.id %}" class="text-white text-decoration-none">{{ proyecto.titulo }}</a>
                     </h3>
                 </div>

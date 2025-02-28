@@ -1,7 +1,9 @@
 {% extends 'gestion/base.html' %}
 {% block contenido %}
-<h1 class="text-center">Gestionar {{ grupo.nombre }}</h1>
 <div class="card mb-3">
+    <div class="card-header bg-dark text-white">
+        <h1 class="mb-0 text-uppercase">Gestionar {{ grupo.nombre }}</h1>
+    </div>
     <div class="card-body">
         <form method="post" class="d-flex justify-content-between align-items-center">
             {% csrf_token %}

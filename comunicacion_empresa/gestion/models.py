@@ -66,11 +66,11 @@ class Rol(models.Model):
     rol = models.CharField(max_length=20, choices=ROLES, default='miembro')
 
     class Meta:
-        unique_together = ('usuario', 'proyecto')  # Un solo rol por usuario y proyecto
+        unique_together = ('usuario', 'proyecto')
 
     def __str__(self):
         return f"{self.usuario} - {self.rol} en {self.proyecto}"
-    
+
 class MensajeProyecto(models.Model):
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='mensajes')
     remitente = models.ForeignKey(User, on_delete=models.CASCADE)
