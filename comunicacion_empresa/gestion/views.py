@@ -38,13 +38,20 @@ def crear_proyecto(request):
             proyecto = form.save(commit=False)
             proyecto.creador = request.user
             proyecto.save()
-            proyecto.usuarios.add(request.user)  # El creador siempre está asignado
-            form.save_m2m()  # Guardar los usuarios asignados desde el formulario
+            # Obtener los usuarios seleccionados del formulario
+            usuarios_seleccionados = form.cleaned_data['usuarios']
+            print("Usuarios seleccionados en el formulario:", usuarios_seleccionados)  # Depuración
+            # Asignar los usuarios seleccionados al proyecto
+            for usuario in usuarios_seleccionados:
+                proyecto.usuarios.add(usuario)
+            proyecto.usuarios.add(request.user)  # Asegurar que el creador esté asignado
+            print("Usuarios asignados al proyecto después de guardar:", proyecto.usuarios.all())  # Depuración
             # Notificar a todos los usuarios asignados (excepto el creador)
             for usuario in proyecto.usuarios.all():
                 if usuario != request.user:
+                    print(f"Enviando notificación a {usuario.username}")  # Depuración
                     notify.send(
-                        request.user,
+                        sender=request.user,
                         recipient=usuario,
                         verb='te asignó al proyecto',
                         target=proyecto,
@@ -130,6 +137,15 @@ def editar_proyecto(request, proyecto_id):
         form = ProyectoForm(request.POST, instance=proyecto)
         if form.is_valid():
             form.save()
+            # Notificar a todos los usuarios asignados sobre la edición
+            for usuario in proyecto.usuarios.all():
+                notify.send(
+                    request.user,
+                    recipient=usuario,
+                    verb='modificó el proyecto',
+                    target=proyecto,
+                    description=f'Proyecto: {proyecto.titulo}'
+                )
             return redirect('vista_proyecto', proyecto_id=proyecto.id)
     else:
         form = ProyectoForm(instance=proyecto)
@@ -139,7 +155,19 @@ def editar_proyecto(request, proyecto_id):
 def eliminar_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     if request.method == 'POST':
+        # Guardar la lista de usuarios antes de eliminar
+        usuarios_asignados = list(proyecto.usuarios.all())
+        proyecto_titulo = proyecto.titulo
         proyecto.delete()
+        # Notificar a todos los usuarios asignados sobre la eliminación
+        for usuario in usuarios_asignados:
+            notify.send(
+                request.user,
+                recipient=usuario,
+                verb='eliminó el proyecto',
+                target=None,  # El proyecto ya no existe
+                description=f'Proyecto: {proyecto_titulo}'
+            )
         return redirect('lista_proyectos')
     return render(request, 'gestion/confirmar_eliminar.html', {'objeto': proyecto, 'tipo': 'proyecto'})
 
@@ -153,7 +181,8 @@ def crear_tarea(request, proyecto_id):
             tarea = form.save(commit=False)
             tarea.proyecto = proyecto
             tarea.save()
-            form.save_m2m()
+            form.save_m2m()  # Guardar los usuarios asignados
+            # Enviar una sola notificación a los asignados
             for usuario in tarea.asignados.all():
                 notify.send(
                     request.user,
@@ -295,14 +324,25 @@ def borrar_chat(request, usuario_id):
         return redirect('lista_proyectos')
     return render(request, 'gestion/confirmar_eliminar.html', {'objeto': User.objects.get(id=usuario_id), 'tipo': 'chat'})
 
-# Vistas de mensajes de proyecto
-@login_required
+# Vistas de mensajes de proyecto@login_required
 def enviar_mensaje_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     if request.method == 'POST':
         contenido = request.POST.get('contenido')
         if contenido:
-            MensajeProyecto.objects.create(proyecto=proyecto, remitente=request.user, contenido=contenido)
+            mensaje = MensajeProyecto.objects.create(proyecto=proyecto, remitente=request.user, contenido=contenido)
+            print("Usuarios asignados al proyecto:", proyecto.usuarios.all())  # Depuración
+            from notifications.models import Notification  # Importar modelo directamente
+            for usuario in proyecto.usuarios.all():
+                if usuario != request.user:
+                    print(f"Enviando notificación a {usuario.username} por mensaje: {contenido}")  # Depuración
+                    Notification.objects.create(
+                        recipient=usuario,
+                        actor=request.user,
+                        verb='envió un mensaje al proyecto',
+                        target=mensaje,
+                        description=f'Mensaje: {contenido} en {proyecto.titulo}'
+                    )
         return redirect('vista_proyecto', proyecto_id=proyecto.id)
     return render(request, 'gestion/enviar_mensaje_proyecto.html', {'proyecto': proyecto})
 
@@ -459,7 +499,8 @@ def lista_usuarios(request):
 
 @login_required
 def lista_notificaciones(request):
-    notificaciones = request.user.notifications.all()
+    notificaciones = request.user.notifications.all().order_by('-timestamp')  # Ordenar por más reciente
+    print("Notificaciones para", request.user.username, ":", notificaciones)  # Depuración
     return render(request, 'gestion/notificaciones.html', {'notificaciones': notificaciones})
 
 @login_required

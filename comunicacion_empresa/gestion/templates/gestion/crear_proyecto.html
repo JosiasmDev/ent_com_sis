@@ -2,23 +2,37 @@
 {% block contenido %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <h1 class="text-center">Crear Proyecto</h1>
-        <form method="post" class="bg-secondary p-4 rounded">
-            {% csrf_token %}
-            {{ form.as_p }}
-            {% if form.errors %}
-                <div class="alert alert-danger">
-                    <ul>
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li>{{ field.label }}: {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-            <button type="submit" class="btn btn-primary w-100">Guardar</button>
-        </form>
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h1 class="mb-0 text-uppercase">Crear Proyecto</h1>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_titulo" class="form-label">Título:</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_descripcion" class="form-label">Descripción:</label>
+                        {{ form.descripcion }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_fecha_inicio" class="form-label">Fecha de Inicio:</label>
+                        {{ form.fecha_inicio }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_fecha_fin" class="form-label">Fecha de Fin:</label>
+                        {{ form.fecha_fin }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Usuarios:</label>
+                        {{ form.usuarios }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Crear Proyecto</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

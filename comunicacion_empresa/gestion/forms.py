@@ -5,14 +5,27 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import Proyecto, Tarea, Mensaje, Comentario
 
 # gestion/forms.py
+from django import forms
+from .models import Proyecto, Tarea, Mensaje, Comentario
+from django.contrib.auth.models import User
+
+from django import forms
+from .models import Proyecto, Tarea, Mensaje, Comentario
+from django.contrib.auth.models import User
+
 class ProyectoForm(forms.ModelForm):
+    usuarios = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+    
     class Meta:
         model = Proyecto
         fields = ['titulo', 'descripcion', 'fecha_inicio', 'fecha_fin', 'usuarios']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'type': 'date'}),
-            'usuarios': forms.CheckboxSelectMultiple(),
         }
 
 class TareaForm(forms.ModelForm):

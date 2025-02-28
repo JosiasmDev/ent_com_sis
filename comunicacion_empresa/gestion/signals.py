@@ -4,6 +4,7 @@ from django.dispatch import receiver
 from notifications.signals import notify
 from .models import Tarea, Mensaje
 
+'''
 @receiver(m2m_changed, sender=Tarea.asignados.through)
 def notificar_asignacion_tarea(sender, instance, action, pk_set, **kwargs):
     if action == 'post_add':
@@ -17,7 +18,7 @@ def notificar_asignacion_tarea(sender, instance, action, pk_set, **kwargs):
             )
 
 
-'''
+
 @receiver(post_save, sender=Mensaje)
 def notificar_mensaje(sender, instance, created, **kwargs):
     if created:
