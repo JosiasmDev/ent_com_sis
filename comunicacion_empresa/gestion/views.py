@@ -43,7 +43,7 @@ def editar_proyecto(request, proyecto_id):
         form = ProyectoForm(request.POST, instance=proyecto)
         if form.is_valid():
             form.save()
-            return redirect('lista_proyectos')
+            return redirect('vista_proyecto', proyecto_id=proyecto.id)
     else:
         form = ProyectoForm(instance=proyecto)
     return render(request, 'gestion/editar_proyecto.html', {'form': form, 'proyecto': proyecto})
@@ -64,11 +64,36 @@ def vista_proyecto(request, proyecto_id):
     if usuario_id:
         tareas = tareas.filter(asignados__id=usuario_id)
     tareas = tareas.order_by('fecha_limite')
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        usuario_id = request.POST.get('usuario')
+        if accion == 'agregar' and usuario_id:
+            usuario = User.objects.get(id=usuario_id)
+            proyecto.usuarios.add(usuario)
+            # Asignar rol por defecto si no existe
+            Rol.objects.get_or_create(usuario=usuario, proyecto=proyecto, defaults={'rol': 'miembro'})
+        elif accion == 'quitar' and usuario_id:
+            usuario = User.objects.get(id=usuario_id)
+            proyecto.usuarios.remove(usuario)
+            Rol.objects.filter(usuario=usuario, proyecto=proyecto).delete()
+        elif accion == 'cambiar_rol' and usuario_id:
+            rol = request.POST.get('rol')
+            usuario = User.objects.get(id=usuario_id)
+            Rol.objects.update_or_create(usuario=usuario, proyecto=proyecto, defaults={'rol': rol})
+
+    # Preprocesar usuarios con roles
+    usuarios_con_roles = []
+    for usuario in proyecto.usuarios.all():
+        rol_obj = Rol.objects.get(usuario=usuario, proyecto=proyecto)
+        usuarios_con_roles.append({'usuario': usuario, 'rol': rol_obj.rol})
+
     return render(request, 'gestion/proyecto.html', {
         'proyecto': proyecto,
         'tareas': tareas,
         'mensajes': mensajes,
-        'usuarios': proyecto.usuarios.all()
+        'usuarios_con_roles': usuarios_con_roles,
+        'todos_los_usuarios': User.objects.all()  # Para agregar nuevos usuarios
     })
 
 @login_required
@@ -197,20 +222,7 @@ def gestionar_grupo(request, grupo_id):
         'miembros_con_roles': miembros_con_roles
     })
 
-    # Preprocesar los roles de los miembros
-    miembros_con_roles = []
-    for miembro in grupo.miembros.all():
-        try:
-            rol = Rol.objects.get(usuario=miembro, proyecto=grupo.proyecto)
-            miembros_con_roles.append({'miembro': miembro, 'rol': rol.rol})
-        except Rol.DoesNotExist:
-            miembros_con_roles.append({'miembro': miembro, 'rol': 'Sin rol'})
 
-    return render(request, 'gestion/gestionar_grupo.html', {
-        'grupo': grupo,
-        'usuarios': User.objects.all(),
-        'miembros_con_roles': miembros_con_roles
-    })
 
 @login_required
 def lista_usuarios(request):
@@ -327,3 +339,11 @@ def editar_mensaje(request, mensaje_id):
     else:
         form = MensajeForm(instance=mensaje)
     return render(request, 'gestion/editar_mensaje.html', {'form': form, 'mensaje': mensaje})
+
+@login_required
+def eliminar_proyecto(request, proyecto_id):
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    if request.method == 'POST':
+        proyecto.delete()
+        return redirect('lista_proyectos')
+    return render(request, 'gestion/confirmar_eliminar.html', {'objeto': proyecto, 'tipo': 'proyecto'})

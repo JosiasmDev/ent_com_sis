@@ -24,7 +24,7 @@ def chat_data(request):
             mensajes_conversacion = Mensaje.objects.filter(
                 (models.Q(remitente=request.user) & models.Q(destinatario__id=conversacion_con)) |
                 (models.Q(destinatario=request.user) & models.Q(remitente__id=conversacion_con))
-            ).order_by('fecha_envio')
+            ).order_by('-fecha_envio')  # Orden descendente (más nuevo primero)
             mensajes_conversacion.filter(destinatario=request.user, leido=False).update(leido=True)
         
         return {
@@ -32,6 +32,6 @@ def chat_data(request):
             'mensajes_conversacion': mensajes_conversacion,
             'conversacion_con': conversacion_con,
             'usuarios_con_mensajes_no_leidos': usuarios_con_mensajes_no_leidos,
-            'todos_los_usuarios': User.objects.all(),  # Añadido para el formulario
+            'todos_los_usuarios': User.objects.all(),
         }
     return {}
