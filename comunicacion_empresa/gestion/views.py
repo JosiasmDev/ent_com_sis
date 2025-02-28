@@ -152,7 +152,11 @@ def gestionar_grupo(request, grupo_id):
             if usuario_id and rol:
                 usuario = User.objects.get(id=usuario_id)
                 grupo.miembros.add(usuario)
-                Rol.objects.create(usuario=usuario, proyecto=grupo.proyecto, rol=rol)
+                Rol.objects.update_or_create(
+                    usuario=usuario, 
+                    proyecto=grupo.proyecto, 
+                    defaults={'rol': rol}
+                )
         elif accion == 'quitar':
             usuario_id = request.POST.get('usuario')
             if usuario_id:
@@ -164,7 +168,11 @@ def gestionar_grupo(request, grupo_id):
             rol = request.POST.get('rol')
             if usuario_id and rol:
                 usuario = User.objects.get(id=usuario_id)
-                Rol.objects.update_or_create(usuario=usuario, proyecto=grupo.proyecto, defaults={'rol': rol})
+                Rol.objects.update_or_create(
+                    usuario=usuario, 
+                    proyecto=grupo.proyecto, 
+                    defaults={'rol': rol}
+                )
         elif accion == 'eliminar':
             grupo.delete()
             return redirect('lista_grupos')
@@ -173,6 +181,21 @@ def gestionar_grupo(request, grupo_id):
             if nombre:
                 grupo.nombre = nombre
                 grupo.save()
+
+    # Preprocesar los roles de los miembros
+    miembros_con_roles = []
+    for miembro in grupo.miembros.all():
+        try:
+            rol_obj = Rol.objects.get(usuario=miembro, proyecto=grupo.proyecto)
+            miembros_con_roles.append({'miembro': miembro, 'rol': rol_obj.rol})
+        except Rol.DoesNotExist:
+            miembros_con_roles.append({'miembro': miembro, 'rol': 'Sin rol'})
+
+    return render(request, 'gestion/gestionar_grupo.html', {
+        'grupo': grupo,
+        'usuarios': User.objects.all(),
+        'miembros_con_roles': miembros_con_roles
+    })
 
     # Preprocesar los roles de los miembros
     miembros_con_roles = []
@@ -250,3 +273,57 @@ def eliminar_mensaje_proyecto(request, mensaje_id):
         mensaje.delete()
         return redirect('vista_proyecto', proyecto_id=mensaje.proyecto.id)
     return render(request, 'gestion/confirmar_eliminar.html', {'objeto': mensaje, 'tipo': 'mensaje_proyecto'})
+
+@login_required
+def editar_tarea(request, tarea_id):
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    if request.method == 'POST':
+        form = TareaForm(request.POST, instance=tarea)
+        if form.is_valid():
+            form.save()
+            return redirect('vista_proyecto', proyecto_id=tarea.proyecto.id)
+    else:
+        form = TareaForm(instance=tarea)
+    return render(request, 'gestion/editar_tarea.html', {'form': form, 'tarea': tarea})
+
+@login_required
+def eliminar_tarea(request, tarea_id):
+    tarea = get_object_or_404(Tarea, id=tarea_id)
+    if request.method == 'POST':
+        proyecto_id = tarea.proyecto.id
+        tarea.delete()
+        return redirect('vista_proyecto', proyecto_id=proyecto_id)
+    return render(request, 'gestion/confirmar_eliminar.html', {'objeto': tarea, 'tipo': 'tarea'})
+
+@login_required
+def editar_comentario(request, comentario_id):
+    comentario = get_object_or_404(Comentario, id=comentario_id, autor=request.user)
+    if request.method == 'POST':
+        form = ComentarioForm(request.POST, instance=comentario)
+        if form.is_valid():
+            form.save()
+            return redirect('vista_proyecto', proyecto_id=comentario.tarea.proyecto.id)
+    else:
+        form = ComentarioForm(instance=comentario)
+    return render(request, 'gestion/editar_comentario.html', {'form': form, 'comentario': comentario})
+
+@login_required
+def eliminar_comentario(request, comentario_id):
+    comentario = get_object_or_404(Comentario, id=comentario_id, autor=request.user)
+    if request.method == 'POST':
+        proyecto_id = comentario.tarea.proyecto.id
+        comentario.delete()
+        return redirect('vista_proyecto', proyecto_id=proyecto_id)
+    return render(request, 'gestion/confirmar_eliminar.html', {'objeto': comentario, 'tipo': 'comentario'})
+
+@login_required
+def editar_mensaje(request, mensaje_id):
+    mensaje = get_object_or_404(Mensaje, id=mensaje_id, remitente=request.user)
+    if request.method == 'POST':
+        form = MensajeForm(request.POST, instance=mensaje)
+        if form.is_valid():
+            form.save()
+            return redirect(request.META.get('HTTP_REFERER', 'lista_proyectos'))
+    else:
+        form = MensajeForm(instance=mensaje)
+    return render(request, 'gestion/editar_mensaje.html', {'form': form, 'mensaje': mensaje})

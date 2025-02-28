@@ -65,6 +65,9 @@ class Rol(models.Model):
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE)
     rol = models.CharField(max_length=20, choices=ROLES, default='miembro')
 
+    class Meta:
+        unique_together = ('usuario', 'proyecto')  # Un solo rol por usuario y proyecto
+
     def __str__(self):
         return f"{self.usuario} - {self.rol} en {self.proyecto}"
     

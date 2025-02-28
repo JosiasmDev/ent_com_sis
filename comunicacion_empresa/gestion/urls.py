@@ -18,4 +18,9 @@ urlpatterns = [
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
     path('<int:proyecto_id>/mensajes/enviar/', views.enviar_mensaje_proyecto, name='enviar_mensaje_proyecto'),
     path('mensajes/proyecto/<int:mensaje_id>/eliminar/', views.eliminar_mensaje_proyecto, name='eliminar_mensaje_proyecto'),
+    path('tareas/<int:tarea_id>/editar/', views.editar_tarea, name='editar_tarea'),
+    path('tareas/<int:tarea_id>/eliminar/', views.eliminar_tarea, name='eliminar_tarea'),
+    path('comentarios/<int:comentario_id>/editar/', views.editar_comentario, name='editar_comentario'),
+    path('comentarios/<int:comentario_id>/eliminar/', views.eliminar_comentario, name='eliminar_comentario'),
+    path('mensaje/<int:mensaje_id>/editar/', views.editar_mensaje, name='editar_mensaje'),
 ]
